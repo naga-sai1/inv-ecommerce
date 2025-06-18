@@ -8,76 +8,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Star, Zap, Shield, Printer } from "lucide-react";
+import {  Star, Zap, Shield, Printer } from "lucide-react";
+import { getFeaturedProducts, getCategories } from "@/lib/database";
+import AddToCartButton from "./components/add-to-cart-button";
 
-const featuredProducts = [
-  {
-    id: 1,
-    name: "RFID Access Card - 125kHz",
-    price: 599.99,
-    image: "/img/RFID Access Card - 125kHz.jpg?height=300&width=300",
-    category: "RFID Cards",
-    rating: 4.8,
-    reviews: 124,
-    badge: "Best Seller",
-  },
-  {
-    id: 2,
-    name: "NFC Business Card Set",
-    price: 1249.99,
-    image: "/img/NFC Business Card Set.jpg?height=300&width=300",
-    category: "NFC Cards",
-    rating: 4.9,
-    reviews: 89,
-    badge: "New",
-  },
-  {
-    id: 3,
-    name: "3D Printed Phone Stand",
-    price: 280.5,
-    image: "/img/3D Printed Phone Stand image.jpg?height=300&width=300",
-    category: "3D Models",
-    rating: 4.7,
-    reviews: 156,
-    badge: "Popular",
-  },
-  {
-    id: 4,
-    name: "Programmable RFID Key Fob",
-    price: 398.99,
-    image: "/img/Programmable RFID Key Fob.jpg?height=300&width=300",
-    category: "RFID Cards",
-    rating: 4.6,
-    reviews: 203,
-    badge: "",
-  },
-];
+export default async function HomePage() {
+  const [featuredProducts, categories] = await Promise.all([
+    getFeaturedProducts(),
+    getCategories(),
+  ]);
 
-const categories = [
-  {
-    name: "RFID Cards",
-    description: "Access control and identification solutions",
-    icon: Shield,
-    count: 45,
-    image: "/img/e181a7bc-aab0-4ea4-8d99-46fe4c62bdd9.jpg?height=300&width=300",
-  },
-  {
-    name: "NFC Cards",
-    description: "Smart cards for modern connectivity",
-    icon: Zap,
-    count: 32,
-    image: "/img/nfc-card.jpg?height=200&width=300",
-  },
-  {
-    name: "3D Models",
-    description: "Custom printed objects and prototypes",
-    icon: Printer,
-    count: 78,
-    image: "/img/127d23b7-6803-441c-9a0c-f0a206b78450.jpg?height=200&width=300",
-  },
-];
-
-export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -147,41 +87,52 @@ export default function HomePage() {
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {categories.map((category) => (
-              <Card
-                key={category.name}
-                className="hover:shadow-lg transition-shadow cursor-pointer"
-              >
-                <CardHeader>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <category.icon className="h-6 w-6 text-blue-600" />
+            {categories.map((category) => {
+              const IconComponent =
+                category.icon === "Shield"
+                  ? Shield
+                  : category.icon === "Zap"
+                  ? Zap
+                  : Printer;
+
+              return (
+                <Card
+                  key={category.id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                >
+                  <CardHeader>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <IconComponent className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl">
+                          {category.name}
+                        </CardTitle>
+                        <p className="text-sm text-gray-500">
+                          {category.product_count} products
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-xl">{category.name}</CardTitle>
-                      <p className="text-sm text-gray-500">
-                        {category.count} products
-                      </p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Image
-                    src={category.image || "/placeholder.svg"}
-                    alt={category.name}
-                    width={300}
-                    height={300}
-                    className="w-full h-60 object-cover rounded-lg mb-4"
-                  />
-                  <p className="text-gray-600">{category.description}</p>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full">
-                    Browse {category.name}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent>
+                    <Image
+                      src={category.image || "/placeholder.svg"}
+                      alt={category.name}
+                      width={300}
+                      height={300}
+                      className="w-full h-60 object-cover rounded-lg mb-4"
+                    />
+                    <p className="text-gray-600">{category.description}</p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" className="w-full">
+                      Browse {category.name}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -204,7 +155,7 @@ export default function HomePage() {
                 <CardHeader className="p-0">
                   <div className="relative">
                     <Image
-                      src={product.image || "/placeholder.svg"}
+                      src={product.image_url || "/placeholder.svg"}
                       alt={product.name}
                       width={300}
                       height={400}
@@ -234,18 +185,22 @@ export default function HomePage() {
                       </span>
                     </div>
                     <span className="text-sm text-gray-500">
-                      ({product.reviews})
+                      ({product.review_count})
                     </span>
                   </div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    ₹{product.price}
+                  <div className="flex items-center gap-2">
+                    <div className="text-2xl font-bold text-blue-600">
+                      ₹{product.price}
+                    </div>
+                    {product.original_price && (
+                      <div className="text-sm text-gray-500 line-through">
+                        ₹{product.original_price}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
-                  <Button className="w-full">
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Add to Cart
-                  </Button>
+                  <AddToCartButton product={product} />
                 </CardFooter>
               </Card>
             ))}
