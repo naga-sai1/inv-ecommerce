@@ -1,27 +1,26 @@
 "use client";
 
 import type React from "react";
-import { Inter } from "next/font/google";
-import "./globals.css";
 import Header from "./components/header";
 import Footer from "./components/footer";
+import { AuthProvider } from "@/hooks/use-auth";
 import { CartProvider } from "@/hooks/use-cart";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { SessionContextProvider } from "@supabase/auth-helpers-react";
-import { useState } from "react";
+import { Toaster } from "@/components/ui/toaster";
+import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+interface ClientLayoutProps {
+  children: React.ReactNode;
+}
 
-export function ClientLayout({ children }: { children: React.ReactNode }) {
-  const [supabaseClient] = useState(() => createClientComponentClient());
-
+export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
-    <SessionContextProvider supabaseClient={supabaseClient}>
+    <AuthProvider>
       <CartProvider>
         <Header />
         <main>{children}</main>
         <Footer />
+        <Toaster />
       </CartProvider>
-    </SessionContextProvider>
+    </AuthProvider>
   );
 }

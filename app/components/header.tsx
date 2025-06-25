@@ -1,6 +1,4 @@
 "use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +10,14 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,10 +30,21 @@ import {
   Zap,
   Shield,
   Printer,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useCart } from "@/hooks/use-cart";
+import { useRouter } from "next/navigation";
 
 export default function Header() {
-  const [cartCount] = useState(3);
+  const { user, signOut } = useAuth();
+  const { totalItems } = useCart();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/");
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -67,7 +84,7 @@ export default function Header() {
                     </div>
                     <div className="grid gap-2">
                       <Link
-                        href="/products/rfid"
+                        href="/products?category=RFID Cards"
                         className="flex items-center gap-3 p-3 rounded-md hover:bg-gray-50"
                       >
                         <Shield className="h-5 w-5 text-blue-600" />
@@ -79,7 +96,7 @@ export default function Header() {
                         </div>
                       </Link>
                       <Link
-                        href="/products/nfc"
+                        href="/products?category=NFC Cards"
                         className="flex items-center gap-3 p-3 rounded-md hover:bg-gray-50"
                       >
                         <Zap className="h-5 w-5 text-blue-600" />
@@ -91,7 +108,7 @@ export default function Header() {
                         </div>
                       </Link>
                       <Link
-                        href="/products/3d-models"
+                        href="/products?category=3D Models"
                         className="flex items-center gap-3 p-3 rounded-md hover:bg-gray-50"
                       >
                         <Printer className="h-5 w-5 text-blue-600" />
@@ -142,17 +159,59 @@ export default function Header() {
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <Heart className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-              <User className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              {cartCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  {cartCount}
-                </Badge>
-              )}
-            </Button>
+
+            {/* User Menu */}
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {user.profile?.full_name || "User"}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile?tab=orders">Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link href="/auth/login">
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            )}
+
+            {/* Cart */}
+            <Link href="/cart">
+              <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                    {totalItems}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
 
             {/* Mobile Menu */}
             <Sheet>
@@ -179,19 +238,19 @@ export default function Header() {
                       All Products
                     </Link>
                     <Link
-                      href="/products/rfid"
+                      href="/products?category=RFID Cards"
                       className="block px-3 py-2 rounded-md hover:bg-gray-100"
                     >
                       RFID Cards
                     </Link>
                     <Link
-                      href="/products/nfc"
+                      href="/products?category=NFC Cards"
                       className="block px-3 py-2 rounded-md hover:bg-gray-100"
                     >
                       NFC Cards
                     </Link>
                     <Link
-                      href="/products/3d-models"
+                      href="/products?category=3D Models"
                       className="block px-3 py-2 rounded-md hover:bg-gray-100"
                     >
                       3D Models
@@ -208,6 +267,37 @@ export default function Header() {
                     >
                       Contact
                     </Link>
+                    {user ? (
+                      <>
+                        <Link
+                          href="/profile"
+                          className="block px-3 py-2 rounded-md hover:bg-gray-100"
+                        >
+                          Profile
+                        </Link>
+                        <button
+                          onClick={handleSignOut}
+                          className="block w-full text-left px-3 py-2 rounded-md hover:bg-gray-100"
+                        >
+                          Sign Out
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/auth/login"
+                          className="block px-3 py-2 rounded-md hover:bg-gray-100"
+                        >
+                          Sign In
+                        </Link>
+                        <Link
+                          href="/auth/register"
+                          className="block px-3 py-2 rounded-md hover:bg-gray-100"
+                        >
+                          Sign Up
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
               </SheetContent>

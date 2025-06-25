@@ -7,7 +7,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useUser } from "@supabase/auth-helpers-react";
 import {
   getCartItems,
   addToCart,
@@ -16,6 +15,8 @@ import {
   clearCart,
 } from "@/lib/database";
 import type { CartItem } from "@/lib/supabase";
+import { useAuth } from "./use-auth";
+import { toast } from "@/hooks/use-toast";
 
 interface CartContextType {
   items: CartItem[];
@@ -32,8 +33,8 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const user = useUser();
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const loadCart = async () => {
     if (!user?.id) {
@@ -53,11 +54,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   const addItem = async (productId: string, quantity = 1) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to add items to your cart.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const success = await addToCart(user.id, productId, quantity);
     if (success) {
       await loadCart();
+      toast({
+        title: "Added to Cart",
+        description: "Item has been added to your cart successfully.",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to add item to cart. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -67,6 +85,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const success = await updateCartItemQuantity(user.id, productId, quantity);
     if (success) {
       await loadCart();
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update cart. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -76,6 +100,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const success = await removeFromCart(user.id, productId);
     if (success) {
       await loadCart();
+      toast({
+        title: "Item Removed",
+        description: "Item has been removed from your cart.",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to remove item. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -85,6 +119,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const success = await clearCart(user.id);
     if (success) {
       await loadCart();
+      toast({
+        title: "Cart Cleared",
+        description: "All items have been removed from your cart.",
+      });
     }
   };
 

@@ -1,26 +1,14 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ShoppingCart, Star, Filter, Grid, List } from "lucide-react";
+import { useState } from "react"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ShoppingCart, Star, Filter, Grid, List } from "lucide-react"
 
 const products = [
   {
@@ -96,68 +84,58 @@ const products = [
     inStock: true,
     description: "Personalized 3D printed miniature figure from your photo",
   },
-];
+]
 
-const categories = ["All", "RFID Cards", "NFC Cards", "3D Models"];
+const categories = ["All", "RFID Cards", "NFC Cards", "3D Models"]
 const priceRanges = [
   { label: "Under $10", min: 0, max: 10 },
   { label: "$10 - $25", min: 10, max: 25 },
   { label: "$25 - $50", min: 25, max: 50 },
   { label: "Over $50", min: 50, max: 1000 },
-];
+]
 
 export default function ProductsPage() {
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("featured");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
-  const [showInStockOnly, setShowInStockOnly] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [sortBy, setSortBy] = useState("featured")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([])
+  const [showInStockOnly, setShowInStockOnly] = useState(false)
 
   const filteredProducts = products.filter((product) => {
-    const matchesCategory =
-      selectedCategory === "All" || product.category === selectedCategory;
-    const matchesSearch = product.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesStock = !showInStockOnly || product.inStock;
+    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStock = !showInStockOnly || product.inStock
     const matchesPrice =
       selectedPriceRanges.length === 0 ||
       selectedPriceRanges.some((range) => {
-        const priceRange = priceRanges.find((r) => r.label === range);
-        return (
-          priceRange &&
-          product.price >= priceRange.min &&
-          product.price <= priceRange.max
-        );
-      });
+        const priceRange = priceRanges.find((r) => r.label === range)
+        return priceRange && product.price >= priceRange.min && product.price <= priceRange.max
+      })
 
-    return matchesCategory && matchesSearch && matchesStock && matchesPrice;
-  });
+    return matchesCategory && matchesSearch && matchesStock && matchesPrice
+  })
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     switch (sortBy) {
       case "price-low":
-        return a.price - b.price;
+        return a.price - b.price
       case "price-high":
-        return b.price - a.price;
+        return b.price - a.price
       case "rating":
-        return b.rating - a.rating;
+        return b.rating - a.rating
       case "name":
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name)
       default:
-        return 0;
+        return 0
     }
-  });
+  })
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">Our Products</h1>
-        <p className="text-gray-600">
-          Discover our complete range of RFID cards, NFC solutions, and 3D
-          printed models
-        </p>
+        <p className="text-gray-600">Discover our complete range of RFID cards, NFC solutions, and 3D printed models</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -185,10 +163,7 @@ export default function ProductsPage() {
               <label className="block text-sm font-medium mb-2">Category</label>
               <div className="space-y-2">
                 {categories.map((category) => (
-                  <label
-                    key={category}
-                    className="flex items-center space-x-2 cursor-pointer"
-                  >
+                  <label key={category} className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="radio"
                       name="category"
@@ -204,35 +179,22 @@ export default function ProductsPage() {
 
             {/* Price Range */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">
-                Price Range
-              </label>
+              <label className="block text-sm font-medium mb-2">Price Range</label>
               <div className="space-y-2">
                 {priceRanges.map((range) => (
-                  <div
-                    key={range.label}
-                    className="flex items-center space-x-2"
-                  >
+                  <div key={range.label} className="flex items-center space-x-2">
                     <Checkbox
                       id={range.label}
                       checked={selectedPriceRanges.includes(range.label)}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedPriceRanges([
-                            ...selectedPriceRanges,
-                            range.label,
-                          ]);
+                          setSelectedPriceRanges([...selectedPriceRanges, range.label])
                         } else {
-                          setSelectedPriceRanges(
-                            selectedPriceRanges.filter((r) => r !== range.label)
-                          );
+                          setSelectedPriceRanges(selectedPriceRanges.filter((r) => r !== range.label))
                         }
                       }}
                     />
-                    <label
-                      htmlFor={range.label}
-                      className="text-sm cursor-pointer"
-                    >
+                    <label htmlFor={range.label} className="text-sm cursor-pointer">
                       {range.label}
                     </label>
                   </div>
@@ -243,11 +205,7 @@ export default function ProductsPage() {
             {/* Stock Status */}
             <div className="mb-6">
               <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="in-stock"
-                  checked={showInStockOnly}
-                  onCheckedChange={setShowInStockOnly}
-                />
+                <Checkbox id="in-stock" checked={showInStockOnly} onCheckedChange={setShowInStockOnly} />
                 <label htmlFor="in-stock" className="text-sm cursor-pointer">
                   In stock only
                 </label>
@@ -296,25 +254,13 @@ export default function ProductsPage() {
           </div>
 
           {/* Products */}
-          <div
-            className={
-              viewMode === "grid"
-                ? "grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                : "space-y-4"
-            }
-          >
+          <div className={viewMode === "grid" ? "grid sm:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
             {sortedProducts.map((product) => (
               <Card
                 key={product.id}
-                className={`hover:shadow-lg transition-shadow ${
-                  viewMode === "list" ? "flex flex-row" : ""
-                }`}
+                className={`hover:shadow-lg transition-shadow ${viewMode === "list" ? "flex flex-row" : ""}`}
               >
-                <CardHeader
-                  className={`p-0 ${
-                    viewMode === "list" ? "w-48 flex-shrink-0" : ""
-                  }`}
-                >
+                <CardHeader className={`p-0 ${viewMode === "list" ? "w-48 flex-shrink-0" : ""}`}>
                   <div className="relative">
                     <Image
                       src={product.image || "/placeholder.svg"}
@@ -322,21 +268,13 @@ export default function ProductsPage() {
                       width={300}
                       height={300}
                       className={`object-cover rounded-t-lg ${
-                        viewMode === "list"
-                          ? "w-48 h-32 rounded-l-lg rounded-t-none"
-                          : "w-full h-48"
+                        viewMode === "list" ? "w-48 h-32 rounded-l-lg rounded-t-none" : "w-full h-48"
                       }`}
                     />
-                    {product.badge && (
-                      <Badge className="absolute top-2 left-2 bg-red-500">
-                        {product.badge}
-                      </Badge>
-                    )}
+                    {product.badge && <Badge className="absolute top-2 left-2 bg-red-500">{product.badge}</Badge>}
                     {!product.inStock && (
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-t-lg">
-                        <span className="text-white font-semibold">
-                          Out of Stock
-                        </span>
+                        <span className="text-white font-semibold">Out of Stock</span>
                       </div>
                     )}
                   </div>
@@ -348,37 +286,21 @@ export default function ProductsPage() {
                         {product.category}
                       </Badge>
                     </div>
-                    <CardTitle
-                      className={`mb-2 ${
-                        viewMode === "list" ? "text-lg" : "text-lg"
-                      }`}
-                    >
+                    <CardTitle className={`mb-2 ${viewMode === "list" ? "text-lg" : "text-lg"}`}>
                       {product.name}
                     </CardTitle>
-                    {viewMode === "list" && (
-                      <p className="text-sm text-gray-600 mb-3">
-                        {product.description}
-                      </p>
-                    )}
+                    {viewMode === "list" && <p className="text-sm text-gray-600 mb-3">{product.description}</p>}
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex items-center">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium ml-1">
-                          {product.rating}
-                        </span>
+                        <span className="text-sm font-medium ml-1">{product.rating}</span>
                       </div>
-                      <span className="text-sm text-gray-500">
-                        ({product.reviews})
-                      </span>
+                      <span className="text-sm text-gray-500">({product.reviews})</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="text-2xl font-bold text-blue-600">
-                        ${product.price}
-                      </div>
+                      <div className="text-2xl font-bold text-blue-600">${product.price}</div>
                       {product.originalPrice && (
-                        <div className="text-sm text-gray-500 line-through">
-                          ${product.originalPrice}
-                        </div>
+                        <div className="text-sm text-gray-500 line-through">${product.originalPrice}</div>
                       )}
                     </div>
                   </CardContent>
@@ -395,17 +317,15 @@ export default function ProductsPage() {
 
           {sortedProducts.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">
-                No products found matching your criteria.
-              </p>
+              <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={() => {
-                  setSelectedCategory("All");
-                  setSearchQuery("");
-                  setSelectedPriceRanges([]);
-                  setShowInStockOnly(false);
+                  setSelectedCategory("All")
+                  setSearchQuery("")
+                  setSelectedPriceRanges([])
+                  setShowInStockOnly(false)
                 }}
               >
                 Clear Filters
@@ -415,5 +335,5 @@ export default function ProductsPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
