@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Package, Users, ShoppingCart, DollarSign, TrendingUp, Eye } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 interface DashboardStats {

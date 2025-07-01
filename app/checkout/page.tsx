@@ -639,7 +639,7 @@ export default function CheckoutPage() {
               </div>
 
               <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={loading}>
-                {loading ? "Processing..." : `Place Order - ₹${finalTotal.toFixed(2)}`}
+                {loading ? "Processing..." : `Place Order : ₹${finalTotal.toFixed(2)}`}
               </Button>
 
               <p className="text-xs text-gray-500 text-center">
