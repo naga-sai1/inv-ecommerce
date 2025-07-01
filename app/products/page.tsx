@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,103 +9,51 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ShoppingCart, Star, Filter, Grid, List } from "lucide-react"
+import { getProducts, getCategories } from "@/lib/database"
+import AddToCartButton from "../components/add-to-cart-button"
+import type { Product, Category } from "@/lib/supabase"
 
-const products = [
-  {
-    id: 1,
-    name: "RFID Access Card - 125kHz",
-    price: 12.99,
-    originalPrice: 15.99,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "RFID Cards",
-    rating: 4.8,
-    reviews: 124,
-    badge: "Best Seller",
-    inStock: true,
-    description: "High-quality 125kHz RFID card for access control systems",
-  },
-  {
-    id: 2,
-    name: "NFC Business Card Set (10 pack)",
-    price: 24.99,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "NFC Cards",
-    rating: 4.9,
-    reviews: 89,
-    badge: "New",
-    inStock: true,
-    description: "Professional NFC business cards with custom programming",
-  },
-  {
-    id: 3,
-    name: "3D Printed Phone Stand",
-    price: 18.5,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "3D Models",
-    rating: 4.7,
-    reviews: 156,
-    badge: "Popular",
-    inStock: true,
-    description: "Ergonomic phone stand with adjustable viewing angles",
-  },
-  {
-    id: 4,
-    name: "Programmable RFID Key Fob",
-    price: 8.99,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "RFID Cards",
-    rating: 4.6,
-    reviews: 203,
-    badge: "",
-    inStock: true,
-    description: "Durable RFID key fob with 13.56MHz frequency",
-  },
-  {
-    id: 5,
-    name: "NFC Smart Ring",
-    price: 34.99,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "NFC Cards",
-    rating: 4.5,
-    reviews: 67,
-    badge: "",
-    inStock: false,
-    description: "Wearable NFC ring for contactless payments and access",
-  },
-  {
-    id: 6,
-    name: "Custom 3D Miniature Figure",
-    price: 45.0,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "3D Models",
-    rating: 4.9,
-    reviews: 34,
-    badge: "Custom",
-    inStock: true,
-    description: "Personalized 3D printed miniature figure from your photo",
-  },
-]
-
-const categories = ["All", "RFID Cards", "NFC Cards", "3D Models"]
 const priceRanges = [
-  { label: "Under $10", min: 0, max: 10 },
-  { label: "$10 - $25", min: 10, max: 25 },
-  { label: "$25 - $50", min: 25, max: 50 },
-  { label: "Over $50", min: 50, max: 1000 },
+  { label: "Under ₹200", min: 0, max: 200 },
+  { label: "₹200 - ₹500", min: 200, max: 500 },
+  { label: "₹500 - ₹1000", min: 500, max: 1000 },
+  { label: "Over ₹1000", min: 1000, max: 10000 },
 ]
 
 export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<string[]>(["All"])
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [sortBy, setSortBy] = useState("featured")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([])
-  const [showInStockOnly, setShowInStockOnly] = useState(false)
+  const [showInStockOnly, setShowInStockOnly] = useState(true)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [productsData, categoriesData] = await Promise.all([
+          getProducts(),
+          getCategories(),
+        ])
+        setProducts(productsData)
+        const categoryNames = ["All", ...categoriesData.map((cat: Category) => cat.name)]
+        setCategories(categoryNames)
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory = selectedCategory === "All" || product.category === selectedCategory
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStock = !showInStockOnly || product.inStock
+    const matchesStock = !showInStockOnly || product.in_stock
     const matchesPrice =
       selectedPriceRanges.length === 0 ||
       selectedPriceRanges.some((range) => {
@@ -130,6 +78,16 @@ export default function ProductsPage() {
         return 0
     }
   })
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <p>Loading products...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -187,7 +145,7 @@ export default function ProductsPage() {
                       id={range.label}
                       checked={selectedPriceRanges.includes(range.label)}
                       onCheckedChange={(checked) => {
-                        if (checked) {
+                        if (checked === true) {
                           setSelectedPriceRanges([...selectedPriceRanges, range.label])
                         } else {
                           setSelectedPriceRanges(selectedPriceRanges.filter((r) => r !== range.label))
@@ -205,7 +163,11 @@ export default function ProductsPage() {
             {/* Stock Status */}
             <div className="mb-6">
               <div className="flex items-center space-x-2">
-                <Checkbox id="in-stock" checked={showInStockOnly} onCheckedChange={setShowInStockOnly} />
+                <Checkbox 
+                  id="in-stock" 
+                  checked={showInStockOnly} 
+                  onCheckedChange={(checked) => setShowInStockOnly(checked === true)} 
+                />
                 <label htmlFor="in-stock" className="text-sm cursor-pointer">
                   In stock only
                 </label>
@@ -263,7 +225,7 @@ export default function ProductsPage() {
                 <CardHeader className={`p-0 ${viewMode === "list" ? "w-48 flex-shrink-0" : ""}`}>
                   <div className="relative">
                     <Image
-                      src={product.image || "/placeholder.svg"}
+                      src={product.image_url || "/placeholder.svg"}
                       alt={product.name}
                       width={300}
                       height={300}
@@ -272,7 +234,7 @@ export default function ProductsPage() {
                       }`}
                     />
                     {product.badge && <Badge className="absolute top-2 left-2 bg-red-500">{product.badge}</Badge>}
-                    {!product.inStock && (
+                    {!product.in_stock && (
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-t-lg">
                         <span className="text-white font-semibold">Out of Stock</span>
                       </div>
@@ -295,20 +257,17 @@ export default function ProductsPage() {
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                         <span className="text-sm font-medium ml-1">{product.rating}</span>
                       </div>
-                      <span className="text-sm text-gray-500">({product.reviews})</span>
+                      <span className="text-sm text-gray-500">({product.review_count})</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="text-2xl font-bold text-blue-600">${product.price}</div>
-                      {product.originalPrice && (
-                        <div className="text-sm text-gray-500 line-through">${product.originalPrice}</div>
+                      <div className="text-2xl font-bold text-blue-600">₹{product.price}</div>
+                      {product.original_price && (
+                        <div className="text-sm text-gray-500 line-through">₹{product.original_price}</div>
                       )}
                     </div>
                   </CardContent>
                   <CardFooter className="p-4 pt-0">
-                    <Button className="w-full" disabled={!product.inStock}>
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      {product.inStock ? "Add to Cart" : "Out of Stock"}
-                    </Button>
+                    <AddToCartButton product={product} />
                   </CardFooter>
                 </div>
               </Card>

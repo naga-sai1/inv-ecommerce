@@ -134,6 +134,9 @@ export class AuthService {
         return true;
       }
 
+      console.log("Attempting to create profile for user:", userId);
+
+      // Try direct insert first
       const { data, error } = await supabase.from("profiles").insert([
         {
           id: userId,
@@ -143,8 +146,7 @@ export class AuthService {
       ]).select();
 
       if (error) {
-        console.error("Create profile error:", error);
-        console.error("Error details:", {
+        console.error("Direct profile creation failed:", {
           code: error.code,
           message: error.message,
           details: error.details,
@@ -155,6 +157,12 @@ export class AuthService {
         if (error.code === '42501' || error.message.includes('policy')) {
           console.log("Attempting alternative profile creation method...");
           return await this.createProfileAlternative(userId, email, fullName);
+        }
+        
+        // If it's a duplicate key error, profile might already exist
+        if (error.code === '23505') {
+          console.log("Profile already exists (duplicate key)");
+          return true;
         }
         
         return false;
@@ -194,7 +202,7 @@ export class AuthService {
   }
 
   /**
-   * Get user profile
+   * Get user profile with better error handling
    */
   async getProfile(userId: string) {
     try {
@@ -205,7 +213,21 @@ export class AuthService {
         .single();
 
       if (error) {
-        console.error("Get profile error:", error);
+        // Log the specific error details
+        console.error("Get profile error:", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          userId: userId
+        });
+        
+        // If profile doesn't exist (PGRST116), return null
+        if (error.code === 'PGRST116') {
+          console.log("Profile not found for user:", userId);
+          return null;
+        }
+        
         return null;
       }
 

@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 export class StorageService {
-  private bucketName = "inv-ecommerce-image"; // Updated to match your bucket name
+  private bucketName = "inv-ecommerce-image"; 
 
   /**
    * Upload an image file to Supabase Storage

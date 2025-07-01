@@ -337,7 +337,7 @@ export default function ProfilePage() {
                                 {order.status}
                               </Badge>
                               <p className="font-bold mt-1">
-                                ${order.total_amount.toFixed(2)}
+                                ₹{order.total_amount.toFixed(2)}
                               </p>
                             </div>
                           </div>
@@ -360,7 +360,7 @@ export default function ProfilePage() {
                                     {item.product.name}
                                   </p>
                                   <p className="text-xs text-gray-600">
-                                    Qty: {item.quantity} × $
+                                      Qty: {item.quantity} × ₹
                                     {item.price.toFixed(2)}
                                   </p>
                                 </div>

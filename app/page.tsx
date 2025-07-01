@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,14 +11,27 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {  Star, Zap, Shield, Printer } from "lucide-react";
-import { getFeaturedProducts, getCategories } from "@/lib/database";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import AddToCartButton from "./components/add-to-cart-button";
+import { getFeaturedProducts, getCategories } from "@/lib/database";
 
-export default async function HomePage() {
-  const [featuredProducts, categories] = await Promise.all([
-    getFeaturedProducts(),
-    getCategories(),
-  ]);
+export default function HomePage() {
+  const router = useRouter();
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      const [featured, cats] = await Promise.all([
+        getFeaturedProducts(),
+        getCategories(),
+      ]);
+      setFeaturedProducts(featured);
+      setCategories(cats);
+    }
+    fetchData();
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -44,6 +59,7 @@ export default async function HomePage() {
                 <Button
                   size="lg"
                   className="bg-white text-blue-600 hover:bg-gray-100 hover:text-gray-900"
+                  onClick={() => router.push("/products")}
                 >
                   Shop Now
                 </Button>
@@ -51,6 +67,7 @@ export default async function HomePage() {
                   size="lg"
                   variant="outline"
                   className="border-white text-black hover:bg-white hover:text-blue-600"
+                  onClick={() => router.push("/products")}
                 >
                   View Catalog
                 </Button>

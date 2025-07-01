@@ -162,10 +162,10 @@ export default function CartPage() {
 
                       <div className="text-right">
                         <div className="font-bold text-lg">
-                          ${(item.product.price * item.quantity).toFixed(2)}
+                          ₹{(item.product.price * item.quantity).toFixed(2)}
                         </div>
                         <div className="text-sm text-gray-500">
-                          ${item.product.price} each
+                          ₹{item.product.price} each
                         </div>
                       </div>
                     </div>
@@ -185,7 +185,7 @@ export default function CartPage() {
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span>Subtotal ({totalItems} items)</span>
-                <span>${totalPrice.toFixed(2)}</span>
+                <span>₹{totalPrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
@@ -193,12 +193,12 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between">
                 <span>Tax</span>
-                <span>${(totalPrice * 0.08).toFixed(2)}</span>
+                <span>₹{(totalPrice * 0.08).toFixed(2)}</span>
               </div>
               <hr />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${(totalPrice * 1.08).toFixed(2)}</span>
+                <span>₹{(totalPrice * 1.08).toFixed(2)}</span>
               </div>
               <Button className="w-full" size="lg" onClick={handleCheckout}>
                 Proceed to Checkout

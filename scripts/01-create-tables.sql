@@ -108,3 +108,8 @@ CREATE POLICY "Users can view own order items" ON order_items FOR SELECT USING (
 );
 CREATE POLICY "Reviews are viewable by everyone" ON reviews FOR SELECT USING (true);
 CREATE POLICY "Users can manage own reviews" ON reviews FOR ALL USING (auth.uid() = user_id);
+
+-- Allow authenticated users to insert their own cart items
+CREATE POLICY "Users can insert their own cart items" ON cart_items
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);

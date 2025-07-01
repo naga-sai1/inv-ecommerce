@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
-import { useUser } from "@supabase/auth-helpers-react";
+import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Product } from "@/lib/supabase";
@@ -20,7 +20,7 @@ export default function AddToCartButton({
   className,
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
-  const user = useUser();
+  const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 

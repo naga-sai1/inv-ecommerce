@@ -42,8 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } = await supabase.auth.getSession();
 
       if (session?.user) {
-        const profile = await authService.getProfile(session.user.id);
-        setUser({ ...session.user, profile });
+        try {
+          const profile = await authService.getProfile(session.user.id);
+          setUser({ ...session.user, profile });
+        } catch (error) {
+          console.error("Error getting profile:", error);
+          // Set user without profile if profile fetch fails
+          setUser({ ...session.user, profile: undefined });
+        }
       }
 
       setLoading(false);
@@ -56,8 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const profile = await authService.getProfile(session.user.id);
-        setUser({ ...session.user, profile });
+        try {
+          const profile = await authService.getProfile(session.user.id);
+          setUser({ ...session.user, profile });
+        } catch (error) {
+          console.error("Error getting profile:", error);
+          // Set user without profile if profile fetch fails
+          setUser({ ...session.user, profile: undefined });
+        }
       } else {
         setUser(null);
       }
