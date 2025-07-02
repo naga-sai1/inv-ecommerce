@@ -1,88 +1,43 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
-import { useCart } from "@/hooks/use-cart";
-import { useAuth } from "@/hooks/use-auth";
-import OptimizedImage from "@/components/ui/optimized-image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react"
+import { useCart } from "@/hooks/use-cart"
+import OptimizedImage from "@/components/ui/optimized-image"
+import Link from "next/link"
 
 export default function CartPage() {
-  const { items, loading, updateQuantity, removeItem, totalItems, totalPrice } =
-    useCart();
-  const { user } = useAuth();
-  const router = useRouter();
+  const { items, updateQuantity, removeItem, totalPrice, totalItems, clearCart } = useCart()
 
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <ShoppingBag className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-        <h2 className="text-2xl font-bold mb-4">Please Sign In</h2>
-        <p className="text-gray-600 mb-8">
-          You need to be logged in to view your cart.
-        </p>
-        <Link href="/auth/login">
-          <Button>Sign In</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="animate-pulse space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-gray-200 h-32 rounded-lg"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Calculate shipping - free above ₹500
+  const shipping = totalPrice >= 500 ? 0 : 50
+  const gst = totalPrice * 0.18 // 18% GST
+  const finalTotal = totalPrice + shipping + gst
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <ShoppingBag className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-        <h2 className="text-2xl font-bold mb-4">Your Cart is Empty</h2>
-        <p className="text-gray-600 mb-8">
-          Add some products to your cart to get started.
-        </p>
-        <Link href="/products">
-          <Button>Continue Shopping</Button>
-        </Link>
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center">
+          <ShoppingBag className="mx-auto h-24 w-24 text-gray-400 mb-8" />
+          <h2 className="text-3xl font-bold mb-4">Your Cart is Empty</h2>
+          <p className="text-gray-600 mb-8">Looks like you haven't added any products to your cart yet.</p>
+          <Link href="/products">
+            <Button size="lg">
+              Start Shopping
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
       </div>
-    );
+    )
   }
-
-  const handleQuantityChange = async (
-    productId: string,
-    newQuantity: number
-  ) => {
-    if (newQuantity < 1) return;
-    await updateQuantity(productId, newQuantity);
-  };
-
-  const handleRemoveItem = async (productId: string) => {
-    await removeItem(productId);
-  };
-
-  const handleCheckout = () => {
-    router.push("/checkout");
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/products">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Continue Shopping
-          </Button>
-        </Link>
+      <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Shopping Cart</h1>
         <Badge variant="secondary">{totalItems} items</Badge>
       </div>
@@ -94,79 +49,53 @@ export default function CartPage() {
             <Card key={item.id}>
               <CardContent className="p-6">
                 <div className="flex gap-4">
-                  <div className="flex-shrink-0">
-                    <OptimizedImage
-                      src={item.product.image_url}
-                      alt={item.product.name}
-                      width={100}
-                      height={100}
-                      className="rounded-lg"
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
+                  <OptimizedImage
+                    src={item.product.image_url}
+                    alt={item.product.name}
+                    width={100}
+                    height={100}
+                    className="rounded-lg"
+                  />
+                  <div className="flex-1">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h3 className="font-semibold text-lg">
-                          {item.product.name}
-                        </h3>
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          {item.product.category}
-                        </Badge>
+                        <h3 className="font-semibold text-lg">{item.product.name}</h3>
+                        <p className="text-gray-600 text-sm">{item.product.category}</p>
                       </div>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveItem(item.product_id)}
-                        className="text-red-500 hover:text-red-700"
+                        size="icon"
+                        onClick={() => removeItem(item.product_id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
 
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {item.product.description}
-                    </p>
-
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Button
                           variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleQuantityChange(
-                              item.product_id,
-                              item.quantity - 1
-                            )
-                          }
+                          size="icon"
+                          onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
+                          className="h-8 w-8"
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
-                        <span className="font-medium min-w-[2rem] text-center">
-                          {item.quantity}
-                        </span>
+                        <span className="font-medium w-8 text-center">{item.quantity}</span>
                         <Button
                           variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleQuantityChange(
-                              item.product_id,
-                              item.quantity + 1
-                            )
-                          }
+                          size="icon"
+                          onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                          className="h-8 w-8"
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
                       </div>
-
                       <div className="text-right">
-                        <div className="font-bold text-lg">
-                          ₹{(item.product.price * item.quantity).toFixed(2)}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ₹{item.product.price} each
-                        </div>
+                        <p className="font-bold text-lg">₹{(item.product.price * item.quantity).toFixed(2)}</p>
+                        <p className="text-sm text-gray-500">₹{item.product.price.toFixed(2)} each</p>
                       </div>
                     </div>
                   </div>
@@ -174,42 +103,63 @@ export default function CartPage() {
               </CardContent>
             </Card>
           ))}
+
+          <div className="flex justify-between items-center pt-4">
+            <Button variant="outline" onClick={clearCart}>
+              Clear Cart
+            </Button>
+            <Link href="/products">
+              <Button variant="ghost">Continue Shopping</Button>
+            </Link>
+          </div>
         </div>
 
         {/* Order Summary */}
-        <div className="lg:col-span-1">
+        <div>
           <Card className="sticky top-4">
             <CardHeader>
               <CardTitle>Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span>Subtotal ({totalItems} items)</span>
-                <span>₹{totalPrice.toFixed(2)}</span>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Subtotal ({totalItems} items)</span>
+                  <span>₹{totalPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span className={shipping === 0 ? "text-green-600" : ""}>
+                    {shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}
+                  </span>
+                </div>
+                {shipping > 0 && (
+                  <p className="text-xs text-gray-500">Add ₹{(500 - totalPrice).toFixed(2)} more for free shipping</p>
+                )}
+                <div className="flex justify-between">
+                  <span>GST (18%)</span>
+                  <span>₹{gst.toFixed(2)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>₹{finalTotal.toFixed(2)}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>Free</span>
+
+              <Link href="/checkout" className="block">
+                <Button className="w-full" size="lg">
+                  Proceed to Checkout
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+
+              <div className="text-center">
+                <p className="text-xs text-gray-500">Secure checkout powered by industry-standard encryption</p>
               </div>
-              <div className="flex justify-between">
-                <span>Tax</span>
-                <span>₹{(totalPrice * 0.08).toFixed(2)}</span>
-              </div>
-              <hr />
-              <div className="flex justify-between font-bold text-lg">
-                <span>Total</span>
-                <span>₹{(totalPrice * 1.08).toFixed(2)}</span>
-              </div>
-              <Button className="w-full" size="lg" onClick={handleCheckout}>
-                Proceed to Checkout
-              </Button>
-              <p className="text-xs text-gray-500 text-center">
-                Secure checkout powered by Supabase
-              </p>
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
-  );
+  )
 }

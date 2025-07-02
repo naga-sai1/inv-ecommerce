@@ -10,6 +10,7 @@ export interface AuthUser extends User {
     city?: string;
     postal_code?: string;
     country?: string;
+    role?: string;
   };
 }
 

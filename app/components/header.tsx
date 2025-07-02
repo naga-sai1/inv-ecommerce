@@ -1,7 +1,7 @@
-"use client";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+"use client"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -9,7 +9,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+} from "@/components/ui/navigation-menu"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,9 +17,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
+} from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Input } from "@/components/ui/input"
 import {
   ShoppingCart,
   Search,
@@ -31,20 +31,25 @@ import {
   Shield,
   Printer,
   LogOut,
-} from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import { useCart } from "@/hooks/use-cart";
-import { useRouter } from "next/navigation";
+  Settings,
+} from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
+import { useCart } from "@/hooks/use-cart"
+import { useRouter } from "next/navigation"
 
 export default function Header() {
-  const { user, signOut } = useAuth();
-  const { totalItems } = useCart();
-  const router = useRouter();
+  const { user, signOut } = useAuth()
+  const { totalItems } = useCart()
+  const router = useRouter()
 
   const handleSignOut = async () => {
-    await signOut();
-    router.push("/");
-  };
+    await signOut()
+    router.push("/")
+  }
+
+  // Check if user is admin
+  const isAdmin =
+    user && (user.email?.includes("admin") || user.profile?.role === "admin" || user.email === "admin@techcardpro.com")
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -72,12 +77,9 @@ export default function Header() {
                           href="/products"
                         >
                           <CreditCard className="h-6 w-6" />
-                          <div className="mb-2 mt-4 text-lg font-medium">
-                            All Products
-                          </div>
+                          <div className="mb-2 mt-4 text-lg font-medium">All Products</div>
                           <p className="text-sm leading-tight text-blue-100">
-                            Browse our complete catalog of RFID, NFC, and 3D
-                            printed solutions
+                            Browse our complete catalog of RFID, NFC, and 3D printed solutions
                           </p>
                         </Link>
                       </NavigationMenuLink>
@@ -90,9 +92,7 @@ export default function Header() {
                         <Shield className="h-5 w-5 text-blue-600" />
                         <div>
                           <div className="font-medium">RFID Cards</div>
-                          <div className="text-sm text-gray-500">
-                            Access control solutions
-                          </div>
+                          <div className="text-sm text-gray-500">Access control solutions</div>
                         </div>
                       </Link>
                       <Link
@@ -102,9 +102,7 @@ export default function Header() {
                         <Zap className="h-5 w-5 text-blue-600" />
                         <div>
                           <div className="font-medium">NFC Cards</div>
-                          <div className="text-sm text-gray-500">
-                            Smart connectivity cards
-                          </div>
+                          <div className="text-sm text-gray-500">Smart connectivity cards</div>
                         </div>
                       </Link>
                       <Link
@@ -114,9 +112,7 @@ export default function Header() {
                         <Printer className="h-5 w-5 text-blue-600" />
                         <div>
                           <div className="font-medium">3D Models</div>
-                          <div className="text-sm text-gray-500">
-                            Custom printed objects
-                          </div>
+                          <div className="text-sm text-gray-500">Custom printed objects</div>
                         </div>
                       </Link>
                     </div>
@@ -146,11 +142,7 @@ export default function Header() {
           <div className="hidden md:flex flex-1 max-w-sm mx-8">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="search"
-                placeholder="Search products..."
-                className="pl-10 pr-4"
-              />
+              <Input type="search" placeholder="Search products..." className="pl-10 pr-4" />
             </div>
           </div>
 
@@ -171,12 +163,13 @@ export default function Header() {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {user.profile?.full_name || "User"}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user.email}
-                      </p>
+                      <p className="text-sm font-medium leading-none">{user.profile?.full_name || "User"}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                      {isAdmin && (
+                        <Badge variant="secondary" className="text-xs w-fit">
+                          Admin
+                        </Badge>
+                      )}
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -186,6 +179,17 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/profile?tab=orders">Orders</Link>
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -224,57 +228,37 @@ export default function Header() {
                 <div className="flex flex-col space-y-4 mt-8">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      type="search"
-                      placeholder="Search products..."
-                      className="pl-10 pr-4"
-                    />
+                    <Input type="search" placeholder="Search products..." className="pl-10 pr-4" />
                   </div>
                   <div className="space-y-2">
-                    <Link
-                      href="/products"
-                      className="block px-3 py-2 rounded-md hover:bg-gray-100"
-                    >
+                    <Link href="/products" className="block px-3 py-2 rounded-md hover:bg-gray-100">
                       All Products
                     </Link>
-                    <Link
-                      href="/products?category=RFID Cards"
-                      className="block px-3 py-2 rounded-md hover:bg-gray-100"
-                    >
+                    <Link href="/products?category=RFID Cards" className="block px-3 py-2 rounded-md hover:bg-gray-100">
                       RFID Cards
                     </Link>
-                    <Link
-                      href="/products?category=NFC Cards"
-                      className="block px-3 py-2 rounded-md hover:bg-gray-100"
-                    >
+                    <Link href="/products?category=NFC Cards" className="block px-3 py-2 rounded-md hover:bg-gray-100">
                       NFC Cards
                     </Link>
-                    <Link
-                      href="/products?category=3D Models"
-                      className="block px-3 py-2 rounded-md hover:bg-gray-100"
-                    >
+                    <Link href="/products?category=3D Models" className="block px-3 py-2 rounded-md hover:bg-gray-100">
                       3D Models
                     </Link>
-                    <Link
-                      href="/about"
-                      className="block px-3 py-2 rounded-md hover:bg-gray-100"
-                    >
+                    <Link href="/about" className="block px-3 py-2 rounded-md hover:bg-gray-100">
                       About
                     </Link>
-                    <Link
-                      href="/contact"
-                      className="block px-3 py-2 rounded-md hover:bg-gray-100"
-                    >
+                    <Link href="/contact" className="block px-3 py-2 rounded-md hover:bg-gray-100">
                       Contact
                     </Link>
                     {user ? (
                       <>
-                        <Link
-                          href="/profile"
-                          className="block px-3 py-2 rounded-md hover:bg-gray-100"
-                        >
+                        <Link href="/profile" className="block px-3 py-2 rounded-md hover:bg-gray-100">
                           Profile
                         </Link>
+                        {isAdmin && (
+                          <Link href="/admin" className="block px-3 py-2 rounded-md hover:bg-gray-100">
+                            Admin Dashboard
+                          </Link>
+                        )}
                         <button
                           onClick={handleSignOut}
                           className="block w-full text-left px-3 py-2 rounded-md hover:bg-gray-100"
@@ -284,16 +268,10 @@ export default function Header() {
                       </>
                     ) : (
                       <>
-                        <Link
-                          href="/auth/login"
-                          className="block px-3 py-2 rounded-md hover:bg-gray-100"
-                        >
+                        <Link href="/auth/login" className="block px-3 py-2 rounded-md hover:bg-gray-100">
                           Sign In
                         </Link>
-                        <Link
-                          href="/auth/register"
-                          className="block px-3 py-2 rounded-md hover:bg-gray-100"
-                        >
+                        <Link href="/auth/register" className="block px-3 py-2 rounded-md hover:bg-gray-100">
                           Sign Up
                         </Link>
                       </>
@@ -306,5 +284,5 @@ export default function Header() {
         </div>
       </div>
     </header>
-  );
+  )
 }

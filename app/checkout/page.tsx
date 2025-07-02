@@ -9,14 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CreditCard, Lock, ArrowLeft, CheckCircle, Smartphone, Banknote, QrCode } from "lucide-react"
+import { CreditCard, Lock, ArrowLeft, CheckCircle, Smartphone, Building2, Banknote, User, MapPin } from "lucide-react"
 import { useCart } from "@/hooks/use-cart"
 import { useAuth } from "@/hooks/use-auth"
 import OptimizedImage from "@/components/ui/optimized-image"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
-
-type PaymentMethod = "card" | "upi" | "cod" | "netbanking"
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart()
@@ -26,8 +24,7 @@ export default function CheckoutPage() {
   const [orderComplete, setOrderComplete] = useState(false)
   const [orderId, setOrderId] = useState("")
   const [error, setError] = useState("")
-  const [isGuestCheckout, setIsGuestCheckout] = useState(!user)
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card")
+  const [paymentMethod, setPaymentMethod] = useState("card")
 
   const [shippingInfo, setShippingInfo] = useState({
     fullName: user?.profile?.full_name || "",
@@ -40,21 +37,19 @@ export default function CheckoutPage() {
   })
 
   const [paymentInfo, setPaymentInfo] = useState({
-    // Card payment
     cardNumber: "",
     expiryDate: "",
     cvv: "",
     nameOnCard: "",
-    // UPI payment
     upiId: "",
-    // Net banking
     bankName: "",
   })
 
-  const tax = totalPrice * 0.18 // 18% GST for India
-  const shipping = totalPrice > 500 ? 0 : 50 // Free shipping above ₹500
-  const codCharges = paymentMethod === "cod" ? 25 : 0 // COD charges
-  const finalTotal = totalPrice + tax + shipping + codCharges
+  // Calculate totals
+  const gst = totalPrice * 0.18 // 18% GST for India
+  const shipping = totalPrice >= 500 ? 0 : 50 // Free shipping above ₹500
+  const codCharges = paymentMethod === "cod" ? 25 : 0
+  const finalTotal = totalPrice + gst + shipping + codCharges
 
   const handleInputChange = (section: "shipping" | "payment", field: string, value: string) => {
     if (section === "shipping") {
@@ -66,7 +61,7 @@ export default function CheckoutPage() {
   }
 
   const validateForm = () => {
-    // Validate shipping information
+    // Validate shipping info
     if (
       !shippingInfo.fullName ||
       !shippingInfo.email ||
@@ -85,14 +80,14 @@ export default function CheckoutPage() {
       return false
     }
 
-    // Validate phone number (Indian format)
+    // Validate phone number (10 digits for India)
     const phoneRegex = /^[6-9]\d{9}$/
-    if (!phoneRegex.test(shippingInfo.phone.replace(/\D/g, "").slice(-10))) {
-      setError("Please enter a valid 10-digit phone number")
+    if (!phoneRegex.test(shippingInfo.phone)) {
+      setError("Please enter a valid 10-digit mobile number")
       return false
     }
 
-    // Validate payment information based on method
+    // Validate payment info based on method
     if (paymentMethod === "card") {
       if (!paymentInfo.cardNumber || !paymentInfo.expiryDate || !paymentInfo.cvv || !paymentInfo.nameOnCard) {
         setError("Please fill in all card information")
@@ -101,11 +96,6 @@ export default function CheckoutPage() {
     } else if (paymentMethod === "upi") {
       if (!paymentInfo.upiId) {
         setError("Please enter your UPI ID")
-        return false
-      }
-      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/
-      if (!upiRegex.test(paymentInfo.upiId)) {
-        setError("Please enter a valid UPI ID")
         return false
       }
     } else if (paymentMethod === "netbanking") {
@@ -118,50 +108,28 @@ export default function CheckoutPage() {
     return true
   }
 
-  const createGuestOrder = async () => {
-    // For guest orders, we'll create a temporary user record or handle differently
-    const guestOrderData = {
-      user_id: null, // Guest order
-      guest_email: shippingInfo.email,
-      guest_phone: shippingInfo.phone,
-      guest_name: shippingInfo.fullName,
-      total_amount: Number(finalTotal.toFixed(2)),
-      status: "processing",
-      shipping_address: `${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.postalCode}, ${shippingInfo.country}`,
-      payment_status: paymentMethod === "cod" ? "pending" : "completed",
-      payment_method: paymentMethod,
-    }
-
-    const { data: order, error: orderError } = await supabase.from("orders").insert([guestOrderData]).select().single()
-
-    if (orderError) {
-      throw new Error(`Failed to create guest order: ${orderError.message}`)
-    }
-
-    return order
-  }
-
   const updateUserProfile = async () => {
-    if (!user || isGuestCheckout) return
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            full_name: shippingInfo.fullName,
+            phone: shippingInfo.phone,
+            address: shippingInfo.address,
+            city: shippingInfo.city,
+            postal_code: shippingInfo.postalCode,
+            country: shippingInfo.country,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", user.id)
 
-    try {
-      const { error } = await supabase.from("profiles").upsert({
-        id: user.id,
-        email: user.email,
-        full_name: shippingInfo.fullName,
-        phone: shippingInfo.phone,
-        address: shippingInfo.address,
-        city: shippingInfo.city,
-        postal_code: shippingInfo.postalCode,
-        country: shippingInfo.country,
-        updated_at: new Date().toISOString(),
-      })
-
-      if (error) {
-        console.error("Error updating profile:", error)
+        if (error) {
+          console.error("Error updating profile:", error)
+        }
+      } catch (error) {
+        console.error("Error updating user profile:", error)
       }
-    } catch (error) {
-      console.error("Error updating profile:", error)
     }
   }
 
@@ -178,38 +146,30 @@ export default function CheckoutPage() {
 
     try {
       console.log("Creating order...")
-      console.log("Payment method:", paymentMethod)
-      console.log("Is guest checkout:", isGuestCheckout)
+      console.log("User:", user?.id || "Guest")
+      console.log("Order items:", items)
+      console.log("Total amount:", finalTotal)
 
-      let order
+      // Create order data
+      const orderData = {
+        user_id: user?.id || null,
+        total_amount: Number(finalTotal.toFixed(2)),
+        status: "pending",
+        shipping_address: `${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.postalCode}, ${shippingInfo.country}`,
+        payment_status: paymentMethod === "cod" ? "pending" : "completed",
+        payment_method: paymentMethod,
+        guest_email: !user ? shippingInfo.email : null,
+        guest_phone: !user ? shippingInfo.phone : null,
+        guest_name: !user ? shippingInfo.fullName : null,
+      }
 
-      if (isGuestCheckout || !user) {
-        // Guest checkout
-        order = await createGuestOrder()
-      } else {
-        // Logged in user checkout
-        await updateUserProfile()
+      console.log("Creating order with data:", orderData)
 
-        const orderData = {
-          user_id: user.id,
-          total_amount: Number(finalTotal.toFixed(2)),
-          status: "processing",
-          shipping_address: `${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.postalCode}, ${shippingInfo.country}`,
-          payment_status: paymentMethod === "cod" ? "pending" : "completed",
-          payment_method: paymentMethod,
-        }
+      const { data: order, error: orderError } = await supabase.from("orders").insert([orderData]).select().single()
 
-        const { data: orderResult, error: orderError } = await supabase
-          .from("orders")
-          .insert([orderData])
-          .select()
-          .single()
-
-        if (orderError) {
-          throw new Error(`Failed to create order: ${orderError.message}`)
-        }
-
-        order = orderResult
+      if (orderError) {
+        console.error("Order creation error:", orderError)
+        throw new Error(`Failed to create order: ${orderError.message}`)
       }
 
       if (!order) {
@@ -226,16 +186,23 @@ export default function CheckoutPage() {
         price: Number(item.product.price.toFixed(2)),
       }))
 
+      console.log("Creating order items:", orderItems)
+
       const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
 
       if (itemsError) {
         console.error("Order items creation error:", itemsError)
-        // Clean up the order if items failed
+        // Try to clean up the order if items failed
         await supabase.from("orders").delete().eq("id", order.id)
         throw new Error(`Failed to create order items: ${itemsError.message}`)
       }
 
       console.log("Order items created successfully")
+
+      // Update user profile if logged in
+      if (user) {
+        await updateUserProfile()
+      }
 
       // Clear cart
       await clearCart()
@@ -247,122 +214,6 @@ export default function CheckoutPage() {
       setError(error.message || "Failed to place order. Please try again.")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const renderPaymentForm = () => {
-    switch (paymentMethod) {
-      case "card":
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="nameOnCard">Name on Card *</Label>
-              <Input
-                id="nameOnCard"
-                value={paymentInfo.nameOnCard}
-                onChange={(e) => handleInputChange("payment", "nameOnCard", e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="cardNumber">Card Number *</Label>
-              <Input
-                id="cardNumber"
-                placeholder="1234 5678 9012 3456"
-                value={paymentInfo.cardNumber}
-                onChange={(e) => handleInputChange("payment", "cardNumber", e.target.value)}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="expiryDate">Expiry Date *</Label>
-                <Input
-                  id="expiryDate"
-                  placeholder="MM/YY"
-                  value={paymentInfo.expiryDate}
-                  onChange={(e) => handleInputChange("payment", "expiryDate", e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="cvv">CVV *</Label>
-                <Input
-                  id="cvv"
-                  placeholder="123"
-                  value={paymentInfo.cvv}
-                  onChange={(e) => handleInputChange("payment", "cvv", e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-        )
-
-      case "upi":
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="upiId">UPI ID *</Label>
-              <Input
-                id="upiId"
-                placeholder="yourname@paytm"
-                value={paymentInfo.upiId}
-                onChange={(e) => handleInputChange("payment", "upiId", e.target.value)}
-                required
-              />
-            </div>
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <QrCode className="h-4 w-4 inline mr-2" />
-                You will be redirected to your UPI app to complete the payment
-              </p>
-            </div>
-          </div>
-        )
-
-      case "netbanking":
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="bankName">Select Your Bank *</Label>
-              <select
-                id="bankName"
-                className="w-full p-2 border border-gray-300 rounded-md"
-                value={paymentInfo.bankName}
-                onChange={(e) => handleInputChange("payment", "bankName", e.target.value)}
-                required
-              >
-                <option value="">Select Bank</option>
-                <option value="sbi">State Bank of India</option>
-                <option value="hdfc">HDFC Bank</option>
-                <option value="icici">ICICI Bank</option>
-                <option value="axis">Axis Bank</option>
-                <option value="pnb">Punjab National Bank</option>
-                <option value="kotak">Kotak Mahindra Bank</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <p className="text-sm text-green-800">
-                You will be redirected to your bank's secure website to complete the payment
-              </p>
-            </div>
-          </div>
-        )
-
-      case "cod":
-        return (
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <p className="text-sm text-orange-800">
-              <Banknote className="h-4 w-4 inline mr-2" />
-              Pay ₹{finalTotal.toFixed(2)} when your order is delivered. Additional COD charges: ₹25
-            </p>
-          </div>
-        )
-
-      default:
-        return null
     }
   }
 
@@ -396,8 +247,8 @@ export default function CheckoutPage() {
               <p className="font-medium">Order Total: ₹{finalTotal.toFixed(2)}</p>
               <p className="text-sm text-gray-600">
                 {paymentMethod === "cod"
-                  ? "Pay when delivered. You will receive a call before delivery."
-                  : "Payment completed successfully. You will receive an email confirmation shortly."}
+                  ? "You will pay when your order is delivered."
+                  : "Payment has been processed successfully."}
               </p>
             </div>
             <div className="flex gap-4 justify-center">
@@ -426,24 +277,17 @@ export default function CheckoutPage() {
           </Button>
         </Link>
         <h1 className="text-3xl font-bold">Checkout</h1>
+        {!user && (
+          <div className="ml-auto">
+            <Link href="/auth/login">
+              <Button variant="outline" size="sm">
+                <User className="h-4 w-4 mr-2" />
+                Sign In for Faster Checkout
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
-
-      {/* Guest/User Toggle */}
-      {!user && (
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">Already have an account?</h3>
-                <p className="text-sm text-gray-600">Sign in for faster checkout</p>
-              </div>
-              <Link href="/auth/login">
-                <Button variant="outline">Sign In</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Checkout Form */}
@@ -457,7 +301,10 @@ export default function CheckoutPage() {
           {/* Shipping Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Shipping Information</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Shipping Information
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -482,9 +329,10 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label htmlFor="phone">Mobile Number *</Label>
                 <Input
                   id="phone"
+                  type="tel"
                   placeholder="10-digit mobile number"
                   value={shippingInfo.phone}
                   onChange={(e) => handleInputChange("shipping", "phone", e.target.value)}
@@ -495,7 +343,6 @@ export default function CheckoutPage() {
                 <Label htmlFor="address">Address *</Label>
                 <Input
                   id="address"
-                  placeholder="House no, Street, Area"
                   value={shippingInfo.address}
                   onChange={(e) => handleInputChange("shipping", "address", e.target.value)}
                   required
@@ -537,49 +384,159 @@ export default function CheckoutPage() {
             <CardHeader>
               <CardTitle>Payment Method</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
-                <div className="flex items-center space-x-2 p-3 border rounded-lg">
+            <CardContent>
+              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
+                <div className="flex items-center space-x-2 p-4 border rounded-lg">
                   <RadioGroupItem value="card" id="card" />
                   <Label htmlFor="card" className="flex items-center gap-2 cursor-pointer flex-1">
-                    <CreditCard className="h-4 w-4" />
-                    Credit/Debit Card
+                    <CreditCard className="h-5 w-5" />
+                    <div>
+                      <div className="font-medium">Credit/Debit Card</div>
+                      <div className="text-sm text-gray-500">Visa, MasterCard, RuPay</div>
+                    </div>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2 p-3 border rounded-lg">
+
+                <div className="flex items-center space-x-2 p-4 border rounded-lg">
                   <RadioGroupItem value="upi" id="upi" />
                   <Label htmlFor="upi" className="flex items-center gap-2 cursor-pointer flex-1">
-                    <Smartphone className="h-4 w-4" />
-                    UPI (PhonePe, Paytm, GPay)
+                    <Smartphone className="h-5 w-5" />
+                    <div>
+                      <div className="font-medium">UPI</div>
+                      <div className="text-sm text-gray-500">PhonePe, Paytm, GPay</div>
+                    </div>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2 p-3 border rounded-lg">
+
+                <div className="flex items-center space-x-2 p-4 border rounded-lg">
                   <RadioGroupItem value="netbanking" id="netbanking" />
                   <Label htmlFor="netbanking" className="flex items-center gap-2 cursor-pointer flex-1">
-                    <Lock className="h-4 w-4" />
-                    Net Banking
+                    <Building2 className="h-5 w-5" />
+                    <div>
+                      <div className="font-medium">Net Banking</div>
+                      <div className="text-sm text-gray-500">All major banks</div>
+                    </div>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2 p-3 border rounded-lg">
+
+                <div className="flex items-center space-x-2 p-4 border rounded-lg">
                   <RadioGroupItem value="cod" id="cod" />
                   <Label htmlFor="cod" className="flex items-center gap-2 cursor-pointer flex-1">
-                    <Banknote className="h-4 w-4" />
-                    Cash on Delivery (+₹25)
+                    <Banknote className="h-5 w-5" />
+                    <div>
+                      <div className="font-medium">Cash on Delivery</div>
+                      <div className="text-sm text-gray-500">Pay when delivered (+₹25 charges)</div>
+                    </div>
                   </Label>
                 </div>
               </RadioGroup>
+            </CardContent>
+          </Card>
 
-              {/* Payment Form */}
-              <div className="mt-4">{renderPaymentForm()}</div>
-
-              {paymentMethod !== "cod" && (
+          {/* Payment Details */}
+          {paymentMethod === "card" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Card Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="nameOnCard">Name on Card *</Label>
+                  <Input
+                    id="nameOnCard"
+                    value={paymentInfo.nameOnCard}
+                    onChange={(e) => handleInputChange("payment", "nameOnCard", e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cardNumber">Card Number *</Label>
+                  <Input
+                    id="cardNumber"
+                    placeholder="1234 5678 9012 3456"
+                    value={paymentInfo.cardNumber}
+                    onChange={(e) => handleInputChange("payment", "cardNumber", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="expiryDate">Expiry Date *</Label>
+                    <Input
+                      id="expiryDate"
+                      placeholder="MM/YY"
+                      value={paymentInfo.expiryDate}
+                      onChange={(e) => handleInputChange("payment", "expiryDate", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cvv">CVV *</Label>
+                    <Input
+                      id="cvv"
+                      placeholder="123"
+                      value={paymentInfo.cvv}
+                      onChange={(e) => handleInputChange("payment", "cvv", e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Lock className="h-4 w-4" />
                   Your payment information is secure and encrypted
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {paymentMethod === "upi" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Smartphone className="h-5 w-5" />
+                  UPI Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div>
+                  <Label htmlFor="upiId">UPI ID *</Label>
+                  <Input
+                    id="upiId"
+                    placeholder="yourname@upi"
+                    value={paymentInfo.upiId}
+                    onChange={(e) => handleInputChange("payment", "upiId", e.target.value)}
+                    required
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {paymentMethod === "netbanking" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Net Banking
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div>
+                  <Label htmlFor="bankName">Select Bank *</Label>
+                  <Input
+                    id="bankName"
+                    placeholder="Enter your bank name"
+                    value={paymentInfo.bankName}
+                    onChange={(e) => handleInputChange("payment", "bankName", e.target.value)}
+                    required
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Order Summary */}
@@ -619,18 +576,18 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? "Free" : `₹${shipping}`}</span>
+                  <span>{shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>GST (18%)</span>
+                  <span>₹{gst.toFixed(2)}</span>
                 </div>
                 {codCharges > 0 && (
                   <div className="flex justify-between">
                     <span>COD Charges</span>
-                    <span>₹{codCharges}</span>
+                    <span>₹{codCharges.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span>Tax (GST 18%)</span>
-                  <span>₹{tax.toFixed(2)}</span>
-                </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
@@ -639,12 +596,12 @@ export default function CheckoutPage() {
               </div>
 
               <Button className="w-full" size="lg" onClick={handlePlaceOrder} disabled={loading}>
-                {loading ? "Processing..." : `Place Order : ₹${finalTotal.toFixed(2)}`}
+                {loading ? "Processing..." : `Place Order - ₹${finalTotal.toFixed(2)}`}
               </Button>
 
               <p className="text-xs text-gray-500 text-center">
                 {paymentMethod === "cod"
-                  ? "Pay when your order is delivered to your doorstep"
+                  ? "You will pay when your order is delivered"
                   : "This is a demo checkout. No real payment will be processed."}
               </p>
             </CardContent>
